@@ -110,6 +110,10 @@ def set_dns_cloudflare(name, content):
 
 
 if __name__ == "__main__":
+    bot = None
+    if telegram_bot_token:
+        from telegram.bot import TelegramBot
+        bot = TelegramBot(telegram_bot_token, [os.getenv("TELEGRAM_ADMIN_ID")])
     for i in range(3):
         e = None
         try:
@@ -127,14 +131,7 @@ if __name__ == "__main__":
                     settings["host"] = sni
 
             set_hosts(hosts, token_response["access_token"])
-        except Exception as e:
-            print(e)
-        if telegram_bot_token:
-            from telegram.bot import TelegramBot
-            bot = TelegramBot(telegram_bot_token, [os.getenv("TELEGRAM_ADMIN_ID")])
-            if e:
-                bot.broadcast_admins(f"Error in updating hosts ({i+1}/3): {e}")
-            else:
+            if bot:
                 text = """
                 Hosts updated successfully:
                 SNI: `{sni}`
@@ -143,5 +140,8 @@ if __name__ == "__main__":
 
                 bot.broadcast_admins("Hosts updated successfully: ")
                 break
+        except Exception as e:
+            if bot:
+                bot.broadcast_admins(f"Error in updating hosts ({i+1}/3): {e}")
 
         time.sleep(5)
