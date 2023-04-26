@@ -1,5 +1,6 @@
 import requests
 
+
 class BotAdmins:
     def __init__(self, ids: list) -> None:
         self.ids = ids
