@@ -17,7 +17,7 @@
                         "xver": 2
                     },
                     {
-                        "path": "/ws",
+                        "path": "/download",
                         "dest": "@vless-ws",
                         "xver": 2
                     },
@@ -96,7 +96,7 @@
                 "security": "none",
                 "wsSettings": {
                     "acceptProxyProtocol": true,
-                    "path": "/ws"
+                    "path": "/download"
                 }
             },
             "sniffing": {
