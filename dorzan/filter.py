@@ -1,5 +1,7 @@
+import time
 from urllib.request import urlopen, Request
 from urllib.parse import urlencode
+from dorzan.telegram.bot import TelegramBot
 import json
 import random
 import string
@@ -14,6 +16,7 @@ marzban_host = os.getenv("XRAY_SUBSCRIPTION_URL_PREFIX")
 cloudflare_email = os.getenv("CLOUDFLARE_EMAIL")
 zone_identifier = os.getenv("ZONE_IDENTIFIER")
 api_key = os.getenv("API_KEY")
+telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", None)
 
 cloudflare_api = "https://api.cloudflare.com"
 marzban_headers: dict = {
@@ -108,20 +111,38 @@ def set_dns_cloudflare(name, content):
 
 
 if __name__ == "__main__":
-    token_response = request_token(username, password)
-    hosts = get_hosts(token_response["access_token"])
-    cloudflare_res = set_dns_cloudflare(get_random_string(16), get_server_ip())
+    for i in range(3):
+        e = None
+        try:
+            token_response = request_token(username, password)
+            hosts = get_hosts(token_response["access_token"])
+            cloudflare_res = set_dns_cloudflare(get_random_string(16), get_server_ip())
 
-    if not cloudflare_res:
-        SystemExit()
+            sni = cloudflare_res["result"]["name"]
 
-    sni = cloudflare_res["result"]["name"]
+            for inbound_tag, inbounds in hosts.items():
+                for settings in inbounds:
+                    if "direct" in settings["remark"]:
+                        continue
+                    settings["sni"] = sni
+                    settings["host"] = sni
 
-    for inbound_tag, inbounds in hosts.items():
-        for settings in inbounds:
-            if "direct" in settings["remark"]:
-                continue
-            settings["sni"] = sni
-            settings["host"] = sni
+            set_hosts(hosts, token_response["access_token"])
+        except Exception as e:
+            print(e)
+        if telegram_bot_token:
+            from telegram import TelegramBot
+            bot = TelegramBot(telegram_bot_token, [os.getenv("TELEGRAM_ADMIN_ID")])
+            if e:
+                bot.broadcast_admins(f"Error in updating hosts ({i+1}/3): {e}")
+            else:
+                text = """
+                Hosts updated successfully:
+                SNI: `{sni}`
+                Host: `{host}`
+                """
 
-    set_hosts(hosts, token_response["access_token"])
+                bot.broadcast_admins("Hosts updated successfully: ")
+                break
+
+        time.sleep(5)
