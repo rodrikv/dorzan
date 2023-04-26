@@ -3,14 +3,19 @@ from urllib.parse import urlencode
 import json
 import random
 import string
+import dotenv
+import os
 
-username = "USERNAME"
-password = "PASSWORD"
+dotenv.load_dotenv("env")
+
+username = os.getenv("SUDO_USERNAME")
+password = os.getenv("SUDO_PASSWORD")
+marzban_host = os.getenv("XRAY_SUBSCRIPTION_URL_PREFIX")
+cloudflare_email = os.getenv("CLOUDFLARE_EMAIL")
+zone_identifier = os.getenv("ZONE_IDENTIFIER")
+api_key = os.getenv("API_KEY")
+
 cloudflare_api = "https://api.cloudflare.com"
-marzban_host = "https://example.com"
-cloudflare_email = "user@exmple.com"
-zone_identifier = "xxx"
-api_key = 'Bearer xxx'
 marzban_headers: dict = {
     'User-Agent': 'own-application/1.0.0',
     'Content-Type': 'application/x-www-form-urlencoded'
@@ -20,10 +25,13 @@ cloudflare_headers = {
     'X-Auth-Email': cloudflare_email,
     'Authorization': api_key
 }
-server_ip = "x.x.x.x"
 
 class TokenError(Exception):
     pass
+
+def get_server_ip():
+    with urlopen("https://api.ipify.org?format=json") as res:
+        return json.loads(res.read().decode())["ip"]
 
 def get_random_string(length):
     # choose from all lowercase letter
@@ -52,7 +60,7 @@ def request_token(username, password):
         "username": username,
         "password": password
     }
-    
+
     return request(
         token_url,
         data=urlencode(data).encode(),
@@ -97,13 +105,13 @@ def set_dns_cloudflare(name, content):
         headers=cloudflare_headers,
         method="POST"
     )
-    
+
 
 if __name__ == "__main__":
     token_response = request_token(username, password)
     hosts = get_hosts(token_response["access_token"])
-    cloudflare_res = set_dns_cloudflare(get_random_string(16), server_ip)
-    
+    cloudflare_res = set_dns_cloudflare(get_random_string(16), get_server_ip())
+
     if not cloudflare_res:
         SystemExit()
 
@@ -111,6 +119,8 @@ if __name__ == "__main__":
 
     for inbound_tag, inbounds in hosts.items():
         for settings in inbounds:
+            if "direct" in settings["remark"]:
+                continue
             settings["sni"] = sni
             settings["host"] = sni
 
