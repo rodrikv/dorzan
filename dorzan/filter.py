@@ -142,6 +142,6 @@ if __name__ == "__main__":
                 break
         except Exception as e:
             if bot:
-                bot.broadcast_admins(f"Error in updating hosts ({i+1}/3): `{e}`")
+                bot.broadcast_admins(f"Error in updating hosts ({i+1}/3): ```{e}```")
 
         time.sleep(5)
