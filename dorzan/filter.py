@@ -1,7 +1,6 @@
 import time
 from urllib.request import urlopen, Request
 from urllib.parse import urlencode
-from dorzan.telegram.bot import TelegramBot
 import json
 import random
 import string
@@ -131,7 +130,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(e)
         if telegram_bot_token:
-            from telegram import TelegramBot
+            from telegram.bot import TelegramBot
             bot = TelegramBot(telegram_bot_token, [os.getenv("TELEGRAM_ADMIN_ID")])
             if e:
                 bot.broadcast_admins(f"Error in updating hosts ({i+1}/3): {e}")
