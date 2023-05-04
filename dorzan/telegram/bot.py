@@ -13,8 +13,12 @@ class TelegramBot:
     def __init__(self, token, admins: BotAdmins) -> None:
         self.token = token
         self.admins = admins
+        self.parse_modes = ["markdown", "html"]
 
     def send_message(self, message, chat_id, parse_mode="markdown"):
+        if parse_mode not in self.parse_modes:
+            parse_mode = "markdown"
+
         url = f"https://api.telegram.org/bot{self.token}/sendMessage"
         data = {
             "chat_id": chat_id,

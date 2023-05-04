@@ -28,6 +28,22 @@ cloudflare_headers = {
     'Authorization': api_key
 }
 
+def retry_on_exception(num_retries):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < num_retries:
+                try:
+                    return func(*args, **kwargs)
+                except Exception:
+                    attempts += 1
+                    if attempts == num_retries:
+                        raise
+                    print(f"Exception caught. Retrying in 1 second. Attempt {attempts}/{num_retries}")
+                    time.sleep(1)
+        return wrapper
+    return decorator
+
 class TokenError(Exception):
     pass
 
@@ -55,6 +71,7 @@ def request(url, data=None, headers=None, method="GET") -> dict:
                 print(response_data)
                 return json.loads(response_data)
 
+@retry_on_exception(5)
 def request_token(username, password):
     token_url = marzban_host + "/api/admin/token"
 
@@ -70,6 +87,7 @@ def request_token(username, password):
         method="POST"
     )
 
+@retry_on_exception(5)
 def get_hosts(token):
     hosts_url = marzban_host + "/api/hosts"
     new_headers = marzban_headers.copy()
@@ -79,6 +97,7 @@ def get_hosts(token):
         headers=new_headers,
     )
 
+@retry_on_exception(5)
 def set_hosts(hosts, token):
     hosts_url = marzban_host + "/api/hosts"
     new_headers = marzban_headers.copy()
@@ -91,6 +110,7 @@ def set_hosts(hosts, token):
         method="PUT"
     )
 
+@retry_on_exception(5)
 def set_dns_cloudflare(name, content):
     dns_records_url = cloudflare_api + f"/client/v4/zones/{zone_identifier}/dns_records"
     payload = {
